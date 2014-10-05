@@ -8,11 +8,12 @@ more info: www.guillaume-j.com
 simple example:
 
 import PyTake2 as pt
-my_take = pt.Take("my_take")
+
+mytake = pt.Take("my_take")
 
 => this will create a new take called "my_take" and add it to the takes list.
 
-my_take.includeDisplayFlag(path_to_node)
+mytake.includeDisplayFlag(pathToNode)
 
-=> this will include the display flag of the node "path_to_node" to the take.
+=> this will include the display flag of the node "pathToNode" to the take.
 
