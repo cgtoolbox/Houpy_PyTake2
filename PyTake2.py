@@ -24,6 +24,7 @@ import hou
 def currentTake():
     '''
         Return the current take.
+        @return: Take
     '''
     currentName = hou.expandString('$ACTIVETAKE')
     if currentName == "Main":
@@ -39,6 +40,7 @@ def ls(pattern=""):
                               pattern: str* all tak's name which starts with 'str'
                               pattern: str take's name which is equal to 'str'.
                               If pattern is empty, returns all takes.
+        @return: list
     '''
     out_list = []
     for take in _listTakeNames():
@@ -68,6 +70,7 @@ def setAutoMode(toggle=True):
     '''
         Set the take mode "automode" on / off
         @param toggle: (bool) Switch automode on / off. 
+        @return: bool
     '''
     if toggle:
         toggle = "on"
@@ -84,6 +87,7 @@ def setAutoMode(toggle=True):
 def setTake(take):
     '''
         Set the given take as current take.
+        @return: bool
     '''
     n = take.name
     result = hou.hscript("takeset " + n)
@@ -97,6 +101,7 @@ def setTake(take):
 def returnToMainTake():
     '''
         Set Main take as current take.
+        @return: bool
     '''
     result = hou.hscript("takeset Main")
     if result[1]:
@@ -107,6 +112,7 @@ def returnToMainTake():
 def takeFromName(take_name):
     '''
         Return a Take object from a given take name.
+        @return: Take
     '''
     if not take_name in _listTakeNames():
         raise TakeError(take_name + " not found in take list.")
@@ -116,9 +122,10 @@ def takeFromName(take_name):
 
 def takeFromFile(file_path, parent=""):
     '''
-        Create a take from a file.
+        Create a take from a file saved with Take.saveToFile().
         @param file_path: (str) File to load.
         @param parent:  (str) Name of parent take, if empty, parent take will be current take
+        @return: Take
     '''
 
     take_list_before = _listTakeNames()
@@ -148,10 +155,16 @@ class Take(object):
         @param set_to_current: (bool) If set to True, the take will be set as current take.
         @param parms_dict: (dict) This will add parms / objects to the take. must be : { node_path : { parmName : parmValue }, ...}. 'ParmValue can be None.
         @param add_to_scene: (bool) Must be set to True.
+        @return: Take
     '''
     
     def __init__(self, name="pytake", parent="", set_to_current=False, parms_dict={}, set_parms=False, add_to_scene=True):
         
+        if not isinstance(parms_dict, dict):
+            msg = "'parms_dict' must be a dictionary of "
+            msg += "{ object : {parm_name : parm_value} } "
+            msg += "parm_value can be None."
+            raise TakeError(msg)
             
         self.set_to_current = set_to_current
         self.node_included = {}
@@ -167,7 +180,9 @@ class Take(object):
         # Construct parent string
         if parent:
             if parent not in _listTakeNames() and parent != "Main":
-                print("ERROR: Can not find parent take: " + parent + " Main take will be set as parent.")
+                msg = "ERROR: Can not find parent take: " + parent
+                msg += " Main take will be set as parent."
+                print(msg)
                 parent = "Main"
                 
             self.parent = "-p " + parent
@@ -220,11 +235,18 @@ class Take(object):
     def _includeExcludeFlag(self, flag, node_path, includeFlag, set_flag, flag_value):
         
         # Check if node_path is correct
-        if not hou.node(node_path):
-            raise InvalidNode(node_path)
-
+        n = None
+        if not isinstance(node_path, hou.Node):
         
-        n = hou.node(node_path)
+            if not hou.node(node_path):
+                raise InvalidNode(node_path)
+            n = hou.node(node_path)
+            
+        else:
+            if not node_path:
+                raise InvalidNode()
+            n = node_path
+            node_path = node_path.path()
         
         # Method to update the flag_included dict
         def includeFlagToDic(flag_to_dic):
@@ -254,7 +276,6 @@ class Take(object):
                 self.node_included[node_path] = tmp
         
         # Check if the node has correct flag
-        n = hou.node(node_path)
         
         if flag == "-d":
             try:
@@ -264,7 +285,6 @@ class Take(object):
             except AttributeError:
                 raise InvalidFlagType("Node: {0} does not have display flag.".format(node_path))
 
-            
         elif flag == "-b":
             try:
                 n.isBypassed()
@@ -273,7 +293,6 @@ class Take(object):
             except AttributeError:
                 raise InvalidFlagType("Node: {0} does not have bypass flag.".format(node_path))
 
-            
         else:
             try:
                 n.isRenderFlagSet()
@@ -316,36 +335,39 @@ class Take(object):
                 n.bypass(flag_value)
                 return True
 
-    def includeRenderFlag(self, node_path, include=True, set_flag=False, flag_value=True):
+    def includeRenderFlag(self, node, include=True, set_flag=False, flag_value=True):
         '''
             Include render flag of the node_path in the take.
-            @param node_path: (str) path of the node
+            @param node: (str) path of the node or instance of hou.Node()
             @param toggle: (bool) Flag Include / Exclude switch.
             @param set_flag: (bool) Set the node's render flag.
-            @param flag_value: (bool) Value of the flag to be set.   
+            @param flag_value: (bool) Value of the flag to be set.
+            @return: bool
         '''
-        self._includeExcludeFlag("-r", node_path, include, set_flag, flag_value)
-
+        self._includeExcludeFlag("-r", node, include, set_flag, flag_value)
         
-    def includeDisplayFlag(self, node_path, include=True, set_flag=False, flag_value=True):
+        
+    def includeDisplayFlag(self, node, include=True, set_flag=False, flag_value=True):
         '''
             Include display flag of the node_path in the take.
-            @param node_path: (str) path of the node
+            @param node: (str) path of the node or instance of hou.Node()
             @param toggle: (bool) Flag Include / Exclude switch.
             @param set_flag: (bool) Set the node's render flag.
-            @param flag_value: (bool) Value of the flag to be set.   
+            @param flag_value: (bool) Value of the flag to be set.
+            @return: bool
         '''
-        self._includeExcludeFlag("-d", node_path, include, set_flag, flag_value)
+        self._includeExcludeFlag("-d", node, include, set_flag, flag_value)
         
-    def includeBypassFlag(self, node_path, include=True, set_flag=False, flag_value=True):
+    def includeBypassFlag(self, node, include=True, set_flag=False, flag_value=True):
         '''
             Include bypass flag of the node_path in the take.
-            @param node_path: (str) path of the node
+            @param node: (str) path of the node or instance of hou.Node()
             @param toggle: (bool) Flag Include / Exclude switch.
             @param set_flag: (bool) Set the node's render flag.
-            @param flag_value: (bool) Value of the flag to be set.   
+            @param flag_value: (bool) Value of the flag to be set.
+            @return: bool
         '''
-        self._includeExcludeFlag("-b", node_path, include, set_flag, flag_value)
+        self._includeExcludeFlag("-b", node, include, set_flag, flag_value)
         
 
     def includeParms(self, node, parms_dict={}, include=True,  set_parms_value=False):
@@ -354,7 +376,8 @@ class Take(object):
             @param node: (str or hou.Node) The node path or the a hou.Node instance, to be included in the take.
             @param parms_dict: (dict) Dictionary of parms:value to be included, value can be None, if empty all the parms of the node will be added.
             @param include: (bool) The toggle include / exclude datas from / to the take.
-            @param set_parms_value: (bool) The switch on/off to set parms value from the parms dict. 
+            @param set_parms_value: (bool) The switch on/off to set parms value from the parms dict.
+            @return: dictionary of parms / object
         '''
         # Check node
         
@@ -511,6 +534,7 @@ class Take(object):
         '''
             Include all parms from a giver take to this take.
             @param force: (bool) Ff a source take has the same included parameter as the destination, the source will overwrite the destination
+            @return: bool
         '''
         name = take.getName()
         if name not in _listTakeNames():
@@ -533,6 +557,7 @@ class Take(object):
     def getNodeIncluded(self):
         '''
             Return a dictionary node / parms included to the take.
+            @return: dictionary of node / parms
         '''
         
         if self.name not in _listTakeNames():
@@ -543,6 +568,7 @@ class Take(object):
     def getNodeIncludedStr(self):
         '''
             Return a clean string of node / parms included to the take.
+            @return: dictionary of node / parms
         '''
         if self.name not in _listTakeNames():
             raise TakeError("Can not find take: " + self.name)
@@ -561,7 +587,9 @@ class Take(object):
     
     def isCurrent(self):
         ''' 
+           
             Check if this take if the current take.
+            @return: bool
         '''
         if self.name == hou.expandString("$ACTIVETAKE"):
             return True
@@ -570,6 +598,7 @@ class Take(object):
     def setCurrent(self):
         ''' 
             Set take as current take.
+            @return: bool
         '''
         result = hou.hscript("takeset " + self.name)
         
@@ -582,6 +611,7 @@ class Take(object):
     def setName(self, name):
         '''
             Rename the current take.
+            @return: string
         '''
         if name == self.name:
             return False
@@ -594,13 +624,14 @@ class Take(object):
 
         else:
             self.name = name
-            return True
+            return name
     
     def copy(self, name="", set_current=False):
         '''
             Return a copy of that take and add it to the list
             @param name: (str) Name of the new take, if empty, name will be 'take'_copy
-            @param set_current: (bool) if True, the copied take will be set as current Take. 
+            @param set_current: (bool) if True, the copied take will be set as current Take.
+            @return: Take
         '''
         if self.name not in _listTakeNames():
             raise TakeError("Can not find take: " + self.name)
@@ -622,6 +653,7 @@ class Take(object):
     def getName(self):
         '''
             Return take's name
+            @return: string
         '''
         if self.name not in _listTakeNames():
             raise TakeError("Can not find take: " + self.name)
@@ -632,6 +664,7 @@ class Take(object):
         '''
             Remove the take from the take list.
             @param recursive: (bool) if True, remove all children take as well.
+            @return: bool
         '''
         if recursive:
             recursive = "-R"
@@ -647,6 +680,7 @@ class Take(object):
     def existInList(self):
         '''
             Return True if take exists in the scene, False if not.
+            @return: bool
         '''
         return self.name in _listTakeNames()
     
@@ -654,7 +688,8 @@ class Take(object):
         '''
             Save the given take to a external file.
             @param file_path: (str) A valid path where to save the file.
-            @param recursive: (bool) if True, save as well as children take of the node.  
+            @param recursive: (bool) if True, save as well as children take of the node.
+            @return: bool
         '''
         
         if not self.name in _listTakeNames():
