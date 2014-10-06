@@ -105,7 +105,7 @@ def returnToMainTake():
     '''
     result = hou.hscript("takeset Main")
     if result[1]:
-        raise TabError(result[1])
+        raise TakeSetError(result[1])
 
     return True
 
