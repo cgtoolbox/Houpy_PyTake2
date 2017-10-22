@@ -2,6 +2,7 @@ import hou
 
 #
 # Python module to create and edit takes in SideFX Houdini.
+# Support available: support@cgtoolbox.com
 #
 # MIT License
 # 
