@@ -412,7 +412,7 @@ class Take(object):
         '''
             Include render flag of the node_path in the take.
             node: (str) path of the node or instance of hou.Node()
-            toggle: (bool) Flag Include / Exclude switch.
+            include: (bool) Flag Include / Exclude switch.
             set_flag: (bool) Set the node's render flag.
             flag_value: (bool) Value of the flag to be set.
 
@@ -654,7 +654,7 @@ class Take(object):
 
     def getParent(self):
         '''
-            Return the take's parent as Take object.
+            Return the take's parent as Take object, or None.
         '''
         if not self.parent:
             return None
@@ -706,7 +706,7 @@ class Take(object):
         else:
             return True
         
-    def existInList(self):
+    def existInScene(self):
         '''
             Return True if take exists in the scene, False if not.
         '''
