@@ -1,0 +1,4 @@
+$NAME:PyTake2
+$DOC_LINK:cgtoolbox.com/houdini-pytake2/
+scripts:scripts
+/:PyTake2_help.doc
