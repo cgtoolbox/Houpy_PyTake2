@@ -27,5 +27,8 @@
     <Folder Include="scripts\" />
     <Folder Include="scripts\python\" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="build_infos.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
 </Project>
